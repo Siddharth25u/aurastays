@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Sparkles,
   CalendarCheck,
+  Heart,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -91,7 +92,7 @@ export default function Navbar() {
         </Link>
 
         {/* DESKTOP NAVIGATION */}
-        <div className="hidden items-center gap-8 md:flex lg:gap-10">
+        <div className="hidden items-center gap-6 md:flex lg:gap-8">
           <Link
             href="/#explore"
             className="relative text-sm text-white/80 transition hover:text-white"
@@ -111,6 +112,14 @@ export default function Navbar() {
             className="text-sm text-white/80 transition hover:text-white"
           >
             Experiences
+          </Link>
+
+          <Link
+            href="/favorites"
+            className="flex items-center gap-1.5 text-sm text-white/80 transition hover:text-white"
+          >
+            <Heart size={15} />
+            Liked Hotels
           </Link>
         </div>
 
@@ -173,6 +182,16 @@ export default function Navbar() {
                     My Bookings
                   </Link>
 
+                  {/* LIKED HOTELS */}
+                  <Link
+                    href="/favorites"
+                    onClick={closeProfileMenu}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <Heart size={16} />
+                    Liked Hotels
+                  </Link>
+
                   {/* LOGOUT */}
                   <button
                     type="button"
@@ -230,7 +249,7 @@ export default function Navbar() {
       <div
         className={`mx-4 overflow-hidden rounded-3xl border border-white/15 bg-[#171713]/95 shadow-2xl backdrop-blur-xl transition-all duration-300 md:hidden ${
           isOpen
-            ? "max-h-[600px] translate-y-0 opacity-100"
+            ? "max-h-[700px] translate-y-0 opacity-100"
             : "pointer-events-none max-h-0 -translate-y-2 opacity-0"
         }`}
       >
@@ -258,6 +277,15 @@ export default function Navbar() {
             className="rounded-xl px-4 py-3 text-sm text-white/85 transition hover:bg-white/10"
           >
             Experiences
+          </Link>
+
+          <Link
+            href="/favorites"
+            onClick={closeMobileMenu}
+            className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm text-white/85 transition hover:bg-white/10"
+          >
+            <Heart size={16} />
+            Liked Hotels
           </Link>
 
           <div className="my-2 h-px bg-white/10" />
@@ -300,6 +328,16 @@ export default function Navbar() {
               >
                 <CalendarCheck size={17} />
                 My Bookings
+              </Link>
+
+              {/* MOBILE LIKED HOTELS */}
+              <Link
+                href="/favorites"
+                onClick={closeMobileMenu}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/85 transition hover:bg-white/10"
+              >
+                <Heart size={17} />
+                Liked Hotels
               </Link>
 
               {/* MOBILE LOGOUT */}

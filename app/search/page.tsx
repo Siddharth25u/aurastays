@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
@@ -18,7 +19,9 @@ import { hotels } from "@/data/hotels";
 function SearchResultsContent() {
   const searchParams = useSearchParams();
 
-  const searchLocation = searchParams.get("location") || "Anywhere";
+  const searchLocation =
+    searchParams.get("location")?.trim() || "";
+
   const checkIn = searchParams.get("checkIn") || "";
   const checkOut = searchParams.get("checkOut") || "";
   const guests = searchParams.get("guests") || "2";
@@ -27,52 +30,52 @@ function SearchResultsContent() {
   const [minRating, setMinRating] = useState(0);
   const [hotelType, setHotelType] = useState("All");
   const [selectedLocation, setSelectedLocation] =
-    useState(searchLocation);
+    useState("Anywhere");
   const [selectedAmenities, setSelectedAmenities] =
     useState<string[]>([]);
   const [sortBy, setSortBy] = useState("recommended");
   const [mobileFiltersOpen, setMobileFiltersOpen] =
     useState(false);
 
-  /* -----------------------------
-     FILTER OPTIONS
-  ----------------------------- */
-
   const locations = [
     "Anywhere",
     ...Array.from(
-      new Set(hotels.map((hotel) => hotel.location))
+      new Set(hotels.map((hotel) => hotel.location)),
     ),
   ];
 
   const hotelTypes = [
     "All",
     ...Array.from(
-      new Set(hotels.map((hotel) => hotel.type))
+      new Set(hotels.map((hotel) => hotel.type)),
     ),
   ];
 
   const amenities = Array.from(
     new Set(
-      hotels.flatMap((hotel) => hotel.amenities)
-    )
+      hotels.flatMap((hotel) => hotel.amenities),
+    ),
   );
 
-  /* -----------------------------
-     FILTER LOGIC
-  ----------------------------- */
-
   const filteredHotels = useMemo(() => {
+    const searchTerm = searchLocation.toLowerCase();
+
     let result = hotels.filter((hotel) => {
-      const matchesLocation =
+      // Partial location search
+      const matchesSearchLocation =
+        !searchTerm ||
+        hotel.location.toLowerCase().includes(searchTerm) ||
+        hotel.name.toLowerCase().includes(searchTerm) ||
+        hotel.type.toLowerCase().includes(searchTerm);
+
+      // Sidebar location filter
+      const matchesSelectedLocation =
         selectedLocation === "Anywhere" ||
         hotel.location === selectedLocation;
 
-      const matchesPrice =
-        hotel.price <= maxPrice;
+      const matchesPrice = hotel.price <= maxPrice;
 
-      const matchesRating =
-        hotel.rating >= minRating;
+      const matchesRating = hotel.rating >= minRating;
 
       const matchesType =
         hotelType === "All" ||
@@ -81,11 +84,12 @@ function SearchResultsContent() {
       const matchesAmenities =
         selectedAmenities.length === 0 ||
         selectedAmenities.every((amenity) =>
-          hotel.amenities.includes(amenity)
+          hotel.amenities.includes(amenity),
         );
 
       return (
-        matchesLocation &&
+        matchesSearchLocation &&
+        matchesSelectedLocation &&
         matchesPrice &&
         matchesRating &&
         matchesType &&
@@ -95,24 +99,25 @@ function SearchResultsContent() {
 
     if (sortBy === "rating") {
       result = [...result].sort(
-        (a, b) => b.rating - a.rating
+        (a, b) => b.rating - a.rating,
       );
     }
 
     if (sortBy === "low") {
       result = [...result].sort(
-        (a, b) => a.price - b.price
+        (a, b) => a.price - b.price,
       );
     }
 
     if (sortBy === "high") {
       result = [...result].sort(
-        (a, b) => b.price - a.price
+        (a, b) => b.price - a.price,
       );
     }
 
     return result;
   }, [
+    searchLocation,
     selectedLocation,
     maxPrice,
     minRating,
@@ -121,15 +126,11 @@ function SearchResultsContent() {
     sortBy,
   ]);
 
-  /* -----------------------------
-     HELPERS
-  ----------------------------- */
-
   const toggleAmenity = (amenity: string) => {
     setSelectedAmenities((current) =>
       current.includes(amenity)
         ? current.filter((item) => item !== amenity)
-        : [...current, amenity]
+        : [...current, amenity],
     );
   };
 
@@ -142,26 +143,22 @@ function SearchResultsContent() {
   };
 
   const formatDate = (date: string) => {
-    if (!date) {
-      return "Select date";
-    }
+    if (!date) return "Select date";
 
-    return new Date(
-      `${date}T00:00:00`
-    ).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    return new Date(`${date}T00:00:00`).toLocaleDateString(
+      "en-IN",
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      },
+    );
   };
 
-  /* -----------------------------
-     PAGE
-  ----------------------------- */
+  const headingLocation = searchLocation || "Anywhere";
 
   return (
     <main className="min-h-screen bg-[#f7f5f0] text-neutral-900">
-
       {/* HEADER */}
       <section className="relative overflow-hidden bg-[#171717] pt-28 text-white sm:pt-32">
         <Navbar />
@@ -174,27 +171,22 @@ function SearchResultsContent() {
           <h1 className="mt-3 text-4xl font-medium tracking-tight sm:text-5xl">
             Stays in{" "}
             <span className="font-serif italic font-normal">
-              {selectedLocation}
+              {headingLocation}
             </span>
           </h1>
 
           <div className="mt-6 flex flex-wrap gap-3 text-sm text-white/70">
-
             <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2">
               <MapPin size={15} />
-              {selectedLocation}
+              {headingLocation}
             </div>
 
             <div className="rounded-full border border-white/15 bg-white/5 px-4 py-2">
-              {formatDate(checkIn)} —{" "}
-              {formatDate(checkOut)}
+              {formatDate(checkIn)} — {formatDate(checkOut)}
             </div>
 
             <div className="rounded-full border border-white/15 bg-white/5 px-4 py-2">
-              {guests}{" "}
-              {guests === "1"
-                ? "Guest"
-                : "Guests"}
+              {guests} {guests === "1" ? "Guest" : "Guests"}
             </div>
           </div>
         </div>
@@ -202,35 +194,23 @@ function SearchResultsContent() {
 
       {/* CONTENT */}
       <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10">
-
         {/* TOP BAR */}
         <div className="flex flex-col gap-4 border-b border-neutral-200 pb-6 md:flex-row md:items-center md:justify-between">
-
-          <div>
-            <p className="text-sm text-neutral-500">
-              {filteredHotels.length}{" "}
-              {filteredHotels.length === 1
-                ? "stay"
-                : "stays"}{" "}
-              found
-            </p>
-          </div>
+          <p className="text-sm text-neutral-500">
+            {filteredHotels.length}{" "}
+            {filteredHotels.length === 1 ? "stay" : "stays"} found
+          </p>
 
           <div className="flex items-center gap-3">
-
-            {/* MOBILE FILTER BUTTON */}
             <button
               type="button"
-              onClick={() =>
-                setMobileFiltersOpen(true)
-              }
+              onClick={() => setMobileFiltersOpen(true)}
               className="flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium md:hidden"
             >
               <Filter size={16} />
               Filters
             </button>
 
-            {/* CLEAR FILTERS */}
             <button
               type="button"
               onClick={clearFilters}
@@ -239,30 +219,16 @@ function SearchResultsContent() {
               Clear filters
             </button>
 
-            {/* SORT */}
             <div className="relative">
               <select
                 value={sortBy}
-                onChange={(event) =>
-                  setSortBy(event.target.value)
-                }
+                onChange={(event) => setSortBy(event.target.value)}
                 className="appearance-none rounded-full border border-neutral-300 bg-white py-2.5 pl-4 pr-10 text-sm font-medium outline-none"
               >
-                <option value="recommended">
-                  Recommended
-                </option>
-
-                <option value="rating">
-                  Top Rated
-                </option>
-
-                <option value="low">
-                  Price Low → High
-                </option>
-
-                <option value="high">
-                  Price High → Low
-                </option>
+                <option value="recommended">Recommended</option>
+                <option value="rating">Top Rated</option>
+                <option value="low">Price Low → High</option>
+                <option value="high">Price High → Low</option>
               </select>
 
               <ChevronDown
@@ -275,7 +241,6 @@ function SearchResultsContent() {
 
         {/* MAIN GRID */}
         <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
-
           {/* DESKTOP FILTERS */}
           <aside className="hidden lg:block">
             <FilterPanel
@@ -286,12 +251,8 @@ function SearchResultsContent() {
               hotelType={hotelType}
               setHotelType={setHotelType}
               selectedLocation={selectedLocation}
-              setSelectedLocation={
-                setSelectedLocation
-              }
-              selectedAmenities={
-                selectedAmenities
-              }
+              setSelectedLocation={setSelectedLocation}
+              selectedAmenities={selectedAmenities}
               toggleAmenity={toggleAmenity}
               locations={locations}
               hotelTypes={hotelTypes}
@@ -305,15 +266,11 @@ function SearchResultsContent() {
             {filteredHotels.length > 0 ? (
               <div className="grid gap-6 md:grid-cols-2">
                 {filteredHotels.map((hotel) => (
-                  <HotelCard
-                    key={hotel.id}
-                    hotel={hotel}
-                  />
+                  <HotelCard key={hotel.id} hotel={hotel} />
                 ))}
               </div>
             ) : (
               <div className="flex min-h-[420px] flex-col items-center justify-center rounded-3xl bg-white px-6 text-center">
-
                 <div className="rounded-full bg-neutral-100 p-4">
                   <SlidersHorizontal size={24} />
                 </div>
@@ -323,9 +280,8 @@ function SearchResultsContent() {
                 </h2>
 
                 <p className="mt-2 max-w-md text-sm leading-6 text-neutral-500">
-                  No properties match your current
-                  filters. Try changing your location,
-                  price range, rating or amenities.
+                  No properties match your current search or filters.
+                  Try another location or clear the filters.
                 </p>
 
                 <button
@@ -344,19 +300,13 @@ function SearchResultsContent() {
       {/* MOBILE FILTER DRAWER */}
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-[100] bg-black/40 lg:hidden">
-
           <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-[2rem] bg-[#f7f5f0] p-6">
-
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-semibold">
-                Filters
-              </h2>
+              <h2 className="text-xl font-semibold">Filters</h2>
 
               <button
                 type="button"
-                onClick={() =>
-                  setMobileFiltersOpen(false)
-                }
+                onClick={() => setMobileFiltersOpen(false)}
                 className="rounded-full bg-white p-2"
                 aria-label="Close filters"
               >
@@ -372,12 +322,8 @@ function SearchResultsContent() {
               hotelType={hotelType}
               setHotelType={setHotelType}
               selectedLocation={selectedLocation}
-              setSelectedLocation={
-                setSelectedLocation
-              }
-              selectedAmenities={
-                selectedAmenities
-              }
+              setSelectedLocation={setSelectedLocation}
+              selectedAmenities={selectedAmenities}
               toggleAmenity={toggleAmenity}
               locations={locations}
               hotelTypes={hotelTypes}
@@ -387,15 +333,11 @@ function SearchResultsContent() {
 
             <button
               type="button"
-              onClick={() =>
-                setMobileFiltersOpen(false)
-              }
+              onClick={() => setMobileFiltersOpen(false)}
               className="mt-6 w-full rounded-full bg-neutral-900 py-3.5 text-sm font-semibold text-white"
             >
               Show {filteredHotels.length}{" "}
-              {filteredHotels.length === 1
-                ? "stay"
-                : "stays"}
+              {filteredHotels.length === 1 ? "stay" : "stays"}
             </button>
           </div>
         </div>
@@ -404,30 +346,22 @@ function SearchResultsContent() {
   );
 }
 
-/* ================================================= */
 /* FILTER PANEL */
-/* ================================================= */
 
 type FilterPanelProps = {
   maxPrice: number;
   setMaxPrice: (value: number) => void;
-
   minRating: number;
   setMinRating: (value: number) => void;
-
   hotelType: string;
   setHotelType: (value: string) => void;
-
   selectedLocation: string;
   setSelectedLocation: (value: string) => void;
-
   selectedAmenities: string[];
   toggleAmenity: (amenity: string) => void;
-
   locations: string[];
   hotelTypes: string[];
   amenities: string[];
-
   clearFilters: () => void;
 };
 
@@ -449,15 +383,10 @@ function FilterPanel({
 }: FilterPanelProps) {
   return (
     <div className="rounded-3xl bg-white p-5">
-
-      {/* HEADER */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SlidersHorizontal size={18} />
-
-          <h2 className="font-semibold">
-            Filters
-          </h2>
+          <h2 className="font-semibold">Filters</h2>
         </div>
 
         <button
@@ -471,18 +400,14 @@ function FilterPanel({
 
       {/* LOCATION */}
       <div className="mt-7">
-        <h3 className="text-sm font-semibold">
-          Location
-        </h3>
+        <h3 className="text-sm font-semibold">Location</h3>
 
         <div className="mt-3 space-y-2">
           {locations.map((location) => (
             <button
               key={location}
               type="button"
-              onClick={() =>
-                setSelectedLocation(location)
-              }
+              onClick={() => setSelectedLocation(location)}
               className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
                 selectedLocation === location
                   ? "bg-neutral-900 text-white"
@@ -497,11 +422,8 @@ function FilterPanel({
 
       {/* PRICE */}
       <div className="mt-8">
-
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">
-            Price per night
-          </h3>
+          <h3 className="text-sm font-semibold">Price per night</h3>
 
           <span className="text-xs text-neutral-500">
             ₹{maxPrice.toLocaleString("en-IN")}
@@ -514,11 +436,7 @@ function FilterPanel({
           max="12000"
           step="500"
           value={maxPrice}
-          onChange={(event) =>
-            setMaxPrice(
-              Number(event.target.value)
-            )
-          }
+          onChange={(event) => setMaxPrice(Number(event.target.value))}
           className="mt-4 w-full accent-neutral-900"
         />
 
@@ -530,58 +448,43 @@ function FilterPanel({
 
       {/* RATING */}
       <div className="mt-8">
-
-        <h3 className="text-sm font-semibold">
-          Rating
-        </h3>
+        <h3 className="text-sm font-semibold">Rating</h3>
 
         <div className="mt-3 space-y-2">
-          {[0, 4.5, 4.7, 4.8, 4.9].map(
-            (rating) => (
-              <button
-                key={rating}
-                type="button"
-                onClick={() =>
-                  setMinRating(rating)
-                }
-                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm transition ${
-                  minRating === rating
-                    ? "bg-neutral-900 text-white"
-                    : "hover:bg-neutral-100"
-                }`}
-              >
-                {rating === 0 ? (
-                  "All ratings"
-                ) : (
-                  <>
-                    <Star
-                      size={14}
-                      className="fill-current"
-                    />
-                    {rating}+
-                  </>
-                )}
-              </button>
-            )
-          )}
+          {[0, 4.5, 4.7, 4.8, 4.9].map((rating) => (
+            <button
+              key={rating}
+              type="button"
+              onClick={() => setMinRating(rating)}
+              className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm transition ${
+                minRating === rating
+                  ? "bg-neutral-900 text-white"
+                  : "hover:bg-neutral-100"
+              }`}
+            >
+              {rating === 0 ? (
+                "All ratings"
+              ) : (
+                <>
+                  <Star size={14} className="fill-current" />
+                  {rating}+
+                </>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* HOTEL TYPE */}
       <div className="mt-8">
-
-        <h3 className="text-sm font-semibold">
-          Hotel type
-        </h3>
+        <h3 className="text-sm font-semibold">Hotel type</h3>
 
         <div className="mt-3 space-y-2">
           {hotelTypes.map((type) => (
             <button
               key={type}
               type="button"
-              onClick={() =>
-                setHotelType(type)
-              }
+              onClick={() => setHotelType(type)}
               className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
                 hotelType === type
                   ? "bg-neutral-900 text-white"
@@ -596,25 +499,17 @@ function FilterPanel({
 
       {/* AMENITIES */}
       <div className="mt-8">
-
-        <h3 className="text-sm font-semibold">
-          Amenities
-        </h3>
+        <h3 className="text-sm font-semibold">Amenities</h3>
 
         <div className="mt-3 space-y-2">
           {amenities.map((amenity) => {
-            const selected =
-              selectedAmenities.includes(
-                amenity
-              );
+            const selected = selectedAmenities.includes(amenity);
 
             return (
               <button
                 key={amenity}
                 type="button"
-                onClick={() =>
-                  toggleAmenity(amenity)
-                }
+                onClick={() => toggleAmenity(amenity)}
                 className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${
                   selected
                     ? "bg-neutral-900 text-white"
@@ -624,9 +519,7 @@ function FilterPanel({
                 <span>{amenity}</span>
 
                 {selected && (
-                  <span className="text-xs">
-                    ✓
-                  </span>
+                  <span className="text-xs">✓</span>
                 )}
               </button>
             );
@@ -637,9 +530,7 @@ function FilterPanel({
   );
 }
 
-/* ================================================= */
 /* PAGE EXPORT */
-/* ================================================= */
 
 export default function SearchPage() {
   return (

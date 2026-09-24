@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -16,55 +17,51 @@ import {
 import { hotels } from "@/data/hotels";
 import { rooms } from "@/data/rooms";
 
-export default function ConfirmationPage() {
+function ConfirmationContent() {
   const searchParams = useSearchParams();
 
   const bookingId =
-    searchParams.get("bookingId") ||
-    "AURA-PENDING";
+    searchParams.get("bookingId") || "AURA-PENDING";
 
-  const hotelSlug =
-    searchParams.get("hotel") || "";
+  const hotelSlug = searchParams.get("hotel") || "";
 
-  const roomId =
-    searchParams.get("room") || "";
+  const roomId = searchParams.get("room") || "";
 
-  const checkIn =
-    searchParams.get("checkIn") || "";
+  const checkIn = searchParams.get("checkIn") || "";
 
-  const checkOut =
-    searchParams.get("checkOut") || "";
+  const checkOut = searchParams.get("checkOut") || "";
 
   const guests = Number(
-    searchParams.get("guests") || "2",
+    searchParams.get("guests") || "2"
   );
 
   const roomCount = Number(
-    searchParams.get("rooms") || "1",
+    searchParams.get("rooms") || "1"
   );
 
   const nights = Number(
-    searchParams.get("nights") || "1",
+    searchParams.get("nights") || "1"
   );
 
   const total = Number(
-    searchParams.get("total") || "0",
+    searchParams.get("total") || "0"
   );
 
   const hotel = hotels.find(
-    (item) => item.slug === hotelSlug,
+    (item) => item.slug === hotelSlug
   );
 
   const room = rooms.find(
     (item) =>
       item.id === roomId &&
-      item.hotelSlug === hotelSlug,
+      item.hotelSlug === hotelSlug
   );
 
   /*
    * Fallback values prevent the page
    * from breaking if URL data is missing.
    */
+
   const hotelName =
     hotel?.name || "AURASTAYS Hotel";
 
@@ -76,8 +73,7 @@ export default function ConfirmationPage() {
     hotel?.image ||
     "/placeholder.jpg";
 
-  const roomPrice =
-    room?.price || 0;
+  const roomPrice = room?.price || 0;
 
   const subtotal =
     total > 0
@@ -97,9 +93,10 @@ export default function ConfirmationPage() {
   /*
    * Browser print dialog.
    *
-   * Later this will be replaced with
+   * Later this can be replaced with
    * actual PDF invoice generation.
    */
+
   const handleDownloadInvoice = () => {
     window.print();
   };
@@ -107,6 +104,7 @@ export default function ConfirmationPage() {
   return (
     <>
       {/* Print-only styles */}
+
       <style jsx global>{`
         @media print {
           body {
@@ -126,6 +124,7 @@ export default function ConfirmationPage() {
 
       <main className="min-h-screen bg-neutral-50 text-neutral-900">
         {/* Header */}
+
         <header className="border-b border-neutral-200 bg-white">
           <div className="mx-auto flex max-w-6xl items-center justify-center px-5 py-5 sm:px-8">
             <Link
@@ -139,6 +138,7 @@ export default function ConfirmationPage() {
 
         <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8 lg:py-14">
           {/* Success */}
+
           <section className="text-center">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-neutral-900 text-white shadow-lg">
               <Check size={38} strokeWidth={2.5} />
@@ -170,10 +170,10 @@ export default function ConfirmationPage() {
           </section>
 
           {/* Main Card */}
-          <section
-            className="print-card mt-10 overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm"
-          >
+
+          <section className="print-card mt-10 overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
             {/* Hotel */}
+
             <div className="grid lg:grid-cols-[320px_1fr]">
               <div className="h-64 lg:h-full">
                 <img
@@ -210,6 +210,8 @@ export default function ConfirmationPage() {
                 </div>
 
                 <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                  {/* Check-in */}
+
                   <div className="flex items-start gap-3">
                     <div className="rounded-xl bg-neutral-100 p-2.5">
                       <CalendarDays size={18} />
@@ -225,6 +227,8 @@ export default function ConfirmationPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Check-out */}
 
                   <div className="flex items-start gap-3">
                     <div className="rounded-xl bg-neutral-100 p-2.5">
@@ -242,6 +246,8 @@ export default function ConfirmationPage() {
                     </div>
                   </div>
 
+                  {/* Guests */}
+
                   <div className="flex items-start gap-3">
                     <div className="rounded-xl bg-neutral-100 p-2.5">
                       <Users size={18} />
@@ -254,12 +260,12 @@ export default function ConfirmationPage() {
 
                       <p className="mt-1 text-sm font-medium">
                         {guests}{" "}
-                        {guests === 1
-                          ? "Guest"
-                          : "Guests"}
+                        {guests === 1 ? "Guest" : "Guests"}
                       </p>
                     </div>
                   </div>
+
+                  {/* Rooms */}
 
                   <div className="flex items-start gap-3">
                     <div className="rounded-xl bg-neutral-100 p-2.5">
@@ -273,9 +279,7 @@ export default function ConfirmationPage() {
 
                       <p className="mt-1 text-sm font-medium">
                         {roomCount}{" "}
-                        {roomCount === 1
-                          ? "Room"
-                          : "Rooms"}
+                        {roomCount === 1 ? "Room" : "Rooms"}
                       </p>
                     </div>
                   </div>
@@ -284,6 +288,7 @@ export default function ConfirmationPage() {
             </div>
 
             {/* Payment Summary */}
+
             <div className="border-t border-neutral-200 p-6 sm:p-8">
               <div className="flex items-center gap-2">
                 <Receipt size={19} />
@@ -294,6 +299,8 @@ export default function ConfirmationPage() {
               </div>
 
               <div className="mt-6 max-w-xl space-y-4">
+                {/* Room Charges */}
+
                 <div className="flex justify-between gap-4 text-sm">
                   <span className="text-neutral-500">
                     Room charges
@@ -301,11 +308,11 @@ export default function ConfirmationPage() {
 
                   <span className="font-medium">
                     ₹
-                    {subtotal.toLocaleString(
-                      "en-IN",
-                    )}
+                    {subtotal.toLocaleString("en-IN")}
                   </span>
                 </div>
+
+                {/* Taxes */}
 
                 <div className="flex justify-between gap-4 text-sm">
                   <span className="text-neutral-500">
@@ -314,29 +321,26 @@ export default function ConfirmationPage() {
 
                   <span className="font-medium">
                     ₹
-                    {tax.toLocaleString(
-                      "en-IN",
-                    )}
+                    {tax.toLocaleString("en-IN")}
                   </span>
                 </div>
 
                 <div className="h-px bg-neutral-200" />
 
+                {/* Total */}
+
                 <div className="flex justify-between gap-4 text-lg font-semibold">
-                  <span>
-                    Total paid
-                  </span>
+                  <span>Total paid</span>
 
                   <span>
                     ₹
-                    {finalTotal.toLocaleString(
-                      "en-IN",
-                    )}
+                    {finalTotal.toLocaleString("en-IN")}
                   </span>
                 </div>
               </div>
 
               {/* Payment Status */}
+
               <div className="mt-6 flex max-w-xl items-center justify-between rounded-2xl bg-neutral-50 p-4">
                 <div>
                   <p className="text-xs text-neutral-400">
@@ -357,6 +361,7 @@ export default function ConfirmationPage() {
           </section>
 
           {/* Email Notice */}
+
           <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-6 text-center">
             <p className="text-sm font-semibold">
               Booking confirmation
@@ -370,6 +375,7 @@ export default function ConfirmationPage() {
           </div>
 
           {/* Actions */}
+
           <div className="no-print mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <button
               type="button"
@@ -390,11 +396,31 @@ export default function ConfirmationPage() {
           </div>
 
           {/* Footer */}
+
           <p className="no-print mt-8 text-center text-xs text-neutral-400">
             Thank you for choosing AURASTAYS.
           </p>
         </div>
       </main>
     </>
+  );
+}
+
+/*
+ * Suspense boundary is required because
+ * useSearchParams() is used inside the page.
+ */
+
+export default function ConfirmationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          Loading confirmation...
+        </div>
+      }
+    >
+      <ConfirmationContent />
+    </Suspense>
   );
 }

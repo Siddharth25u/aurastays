@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -44,18 +44,29 @@ type DatabaseHotel = {
 };
 
 export default function PaymentPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
 
-  const hotelSlug = searchParams.get("hotel") || "";
-  const roomId = searchParams.get("room") || "";
-  const checkIn = searchParams.get("checkIn") || "";
-  const checkOut = searchParams.get("checkOut") || "";
-  const guests = Number(searchParams.get("guests") || "2");
-  const roomCount = Number(searchParams.get("rooms") || "1");
-  const nightsFromUrl = Number(
-    searchParams.get("nights") || "0",
-  );
+  const [queryReady, setQueryReady] = useState(false);
+  const [hotelSlug, setHotelSlug] = useState("");
+  const [roomId, setRoomId] = useState("");
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
+  const [guests, setGuests] = useState(2);
+  const [roomCount, setRoomCount] = useState(1);
+  const [nightsFromUrl, setNightsFromUrl] = useState(0);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    setHotelSlug(params.get("hotel") || "");
+    setRoomId(params.get("room") || "");
+    setCheckIn(params.get("checkIn") || "");
+    setCheckOut(params.get("checkOut") || "");
+    setGuests(Number(params.get("guests") || "2"));
+    setRoomCount(Number(params.get("rooms") || "1"));
+    setNightsFromUrl(Number(params.get("nights") || "0"));
+    setQueryReady(true);
+  }, []);
 
   const [hotel, setHotel] =
     useState<DatabaseHotel | null>(null);
@@ -70,6 +81,8 @@ export default function PaymentPage() {
     let active = true;
 
     const loadBookingDetails = async () => {
+      if (!queryReady) return;
+
       if (!hotelSlug || !roomId) {
         if (active) {
           setDetailsError("Hotel or room information is missing.");
@@ -148,7 +161,7 @@ export default function PaymentPage() {
     return () => {
       active = false;
     };
-  }, [hotelSlug, roomId]);
+  }, [queryReady, hotelSlug, roomId]);
 
   const [paymentMethod, setPaymentMethod] =
     useState<"upi" | "card">("upi");
