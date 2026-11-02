@@ -424,6 +424,7 @@ export default function OwnerPage() {
   const [authEmail, setAuthEmail] = useState<string | null | undefined>(
     undefined
   );
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
 
   /* ---------- Supabase hotels ---------- */
 
@@ -531,8 +532,14 @@ export default function OwnerPage() {
   useEffect(() => {
     supabase.auth
       .getUser()
-      .then(({ data }) => setAuthEmail(data.user?.email ?? null))
-      .catch(() => setAuthEmail(null));
+      .then(({ data }) => {
+        setAuthEmail(data.user?.email ?? null);
+        setAuthUserId(data.user?.id ?? null);
+      })
+      .catch(() => {
+        setAuthEmail(null);
+        setAuthUserId(null);
+      });
   }, []);
 
   async function refreshProperties() {
@@ -609,6 +616,21 @@ export default function OwnerPage() {
     setPropertyMessage("");
 
     try {
+      const { data: currentUserData, error: currentUserError } = await supabase.auth.getUser();
+      if (currentUserError) throw currentUserError;
+      const currentUser = currentUserData.user;
+      if (!currentUser) throw new Error("Please sign in before managing properties.");
+
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+      if (roleError) throw roleError;
+      if (!roleData || !["owner", "admin"].includes(roleData.role)) {
+        throw new Error("Your account does not have owner or admin permissions yet. Ask an administrator to assign your role.");
+      }
+
       const payload = {
         name,
         slug:
@@ -667,7 +689,7 @@ export default function OwnerPage() {
 
       const { data, error } = await supabase
         .from("hotels")
-        .insert({ ...payload, rating: 0, review_count: 0 })
+        .insert({ ...payload, owner_id: currentUser.id, rating: 0, review_count: 0 })
         .select(HOTEL_COLUMNS)
         .single();
 
