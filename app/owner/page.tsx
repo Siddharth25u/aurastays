@@ -81,6 +81,7 @@ type Room = {
   description: string;
   price: number;
   max_guests: number;
+  inventory_count: number;
   bed: string;
   size: string;
   image: string;
@@ -216,6 +217,7 @@ const emptyRoomForm = {
   description: "",
   price: "4500",
   max_guests: "2",
+  inventory_count: "1",
   bed: "",
   size: "",
   image: "",
@@ -378,6 +380,7 @@ function toRoom(row: Record<string, unknown>): Room {
     description: String(row.description ?? ""),
     price: Number(row.price ?? 0),
     max_guests: Number(row.max_guests ?? 2),
+    inventory_count: Number(row.inventory_count ?? 1),
     bed: String(row.bed ?? ""),
     size: String(row.size ?? ""),
     image: String(row.image ?? ""),
@@ -860,6 +863,7 @@ export default function OwnerPage() {
       description: room.description,
       price: String(room.price),
       max_guests: String(room.max_guests),
+      inventory_count: String(room.inventory_count ?? 1),
       bed: room.bed,
       size: room.size,
       image: room.image,
@@ -874,6 +878,7 @@ export default function OwnerPage() {
     const name = roomForm.name.trim();
     const price = Number(roomForm.price);
     const maxGuests = Number(roomForm.max_guests);
+    const inventoryCount = Number(roomForm.inventory_count);
     const image = roomForm.image.trim();
     const statusNote = skipStatus
       ? " (Room status was not saved. Add the status column with the setup SQL.)"
@@ -888,6 +893,9 @@ export default function OwnerPage() {
     }
     if (!Number.isInteger(maxGuests) || maxGuests < 1) {
       return setRoomMessage("Max guests must be at least 1.");
+    }
+    if (!Number.isInteger(inventoryCount) || inventoryCount < 1) {
+      return setRoomMessage("Physical room inventory must be at least 1.");
     }
     if (image && !/^https?:\/\//i.test(image)) {
       return setRoomMessage("Image URL must start with http:// or https://");
@@ -904,6 +912,7 @@ export default function OwnerPage() {
         description: roomForm.description.trim() || null,
         price,
         max_guests: maxGuests,
+        inventory_count: inventoryCount,
         bed: roomForm.bed.trim() || null,
         size: roomForm.size.trim() || null,
         image: image || null,
@@ -1681,6 +1690,14 @@ export default function OwnerPage() {
                 value={roomForm.max_guests}
                 onChange={(value) =>
                   setRoomForm((form) => ({ ...form, max_guests: value }))
+                }
+              />
+              <Field
+                label="Physical rooms in this category"
+                type="number"
+                value={roomForm.inventory_count}
+                onChange={(value) =>
+                  setRoomForm((form) => ({ ...form, inventory_count: value }))
                 }
               />
             </div>
