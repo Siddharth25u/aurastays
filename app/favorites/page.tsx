@@ -21,11 +21,40 @@ export default function FavoritesPage() {
     const loadFavorites = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
-      const { data, error } = await supabase.from("favorites")
-        .select("id, hotel_id, hotels(id, slug, name, location, type, image, price)")
-        .eq("user_id", user.id).order("created_at", { ascending: false });
-      if (error) console.error("Error loading favorites:", error);
-      else if (mounted) setFavorites((data ?? []) as Favorite[]);
+      const { data: savedRows, error: favoritesError } = await supabase
+        .from("favorites")
+        .select("id, hotel_id, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (favoritesError) {
+        console.error("Error loading favorites:", favoritesError);
+      } else {
+        const rows = savedRows ?? [];
+        const hotelIds = [...new Set(rows.map((row) => row.hotel_id))];
+
+        if (hotelIds.length === 0) {
+          if (mounted) setFavorites([]);
+        } else {
+          const { data: hotels, error: hotelsError } = await supabase
+            .from("hotels")
+            .select("id, slug, name, location, type, image, price")
+            .in("id", hotelIds);
+
+          if (hotelsError) {
+            console.error("Error loading favorite hotel details:", hotelsError);
+          } else if (mounted) {
+            const hotelsById = new Map((hotels ?? []).map((hotel) => [hotel.id, hotel]));
+            setFavorites(
+              rows.flatMap((row) => {
+                const hotel = hotelsById.get(row.hotel_id);
+                return hotel ? [{ id: row.id, hotel_id: row.hotel_id, hotels: hotel }] : [];
+              }) as Favorite[]
+            );
+          }
+        }
+      }
+
       if (mounted) setLoading(false);
     };
     loadFavorites();
