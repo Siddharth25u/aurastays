@@ -28,6 +28,7 @@ export const hotels: Hotel[] = [
       "A refined mountain retreat surrounded by Himalayan landscapes, elegant interiors and peaceful luxury.",
     amenities: ["Pool", "Spa", "Breakfast", "Wi-Fi"],
   },
+
   {
     id: "2",
     slug: "palm-retreat",
@@ -43,6 +44,7 @@ export const hotels: Hotel[] = [
       "A tropical escape combining contemporary design, warm hospitality and effortless coastal living.",
     amenities: ["Beach Access", "Pool", "Bar", "Wi-Fi"],
   },
+
   {
     id: "3",
     slug: "royal-heritage-palace",
@@ -58,6 +60,7 @@ export const hotels: Hotel[] = [
       "Experience timeless Rajasthani architecture blended with modern comfort and exceptional hospitality.",
     amenities: ["Restaurant", "Spa", "Pool", "Wi-Fi"],
   },
+
   {
     id: "4",
     slug: "mountain-mist-resort",

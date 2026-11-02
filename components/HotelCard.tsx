@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -7,19 +6,35 @@ import { useEffect, useState } from "react";
 
 import { Hotel } from "@/data/hotels";
 import { supabase } from "@/lib/supabase";
-import { HOTEL_DB_IDS } from "@/data/supabaseIds";
 
 type HotelCardProps = {
-  hotel: Hotel;
+  hotel: Hotel & {
+    dbId?: string;
+    startingPrice?: number;
+  };
 };
 
 type ReviewRating = {
-  rating: number;
+  rating: number | string;
 };
 
 export default function HotelCard({ hotel }: HotelCardProps) {
-  const [rating, setRating] = useState(0);
-  const [reviewCount, setReviewCount] = useState(0);
+  const [rating, setRating] = useState(
+    Number(hotel.rating || 0)
+  );
+
+  const [reviewCount, setReviewCount] = useState(
+    Number(hotel.reviews || 0)
+  );
+
+  const [price, setPrice] = useState(
+    Number(
+      hotel.startingPrice ??
+        hotel.price ??
+        0
+    )
+  );
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
 
@@ -27,11 +42,10 @@ export default function HotelCard({ hotel }: HotelCardProps) {
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState("2");
 
-  const hotelId = HOTEL_DB_IDS[hotel.slug];
-
   /*
-   * Read search parameters safely in the browser.
-   * This avoids useSearchParams() build errors.
+   * ============================================================
+   * SEARCH PARAMETERS
+   * ============================================================
    */
 
   useEffect(() => {
@@ -45,96 +59,219 @@ export default function HotelCard({ hotel }: HotelCardProps) {
   }, []);
 
   /*
-   * Load hotel ratings and subscribe to
-   * real-time review updates.
+   * ============================================================
+   * LOAD PRICE + RATINGS
+   * ============================================================
+   *
+   * IMPORTANT:
+   *
+   * We DO NOT use HOTEL_DB_IDS.
+   *
+   * hotel.dbId is the actual UUID coming from Supabase.
+   *
+   * This means new hotels automatically work.
    */
 
   useEffect(() => {
-    if (!hotelId) {
-      setRating(0);
-      setReviewCount(0);
+    const databaseHotelId = hotel.dbId;
+
+    if (!databaseHotelId) {
+      console.warn(
+        `No database ID available for hotel: ${hotel.slug}`
+      );
+
       return;
     }
 
-    let isMounted = true;
+    let mounted = true;
 
-    const loadRating = async () => {
-      const { data, error } = await supabase
+    const loadHotelData = async () => {
+      /*
+       * ========================================================
+       * LOAD ROOMS
+       * ========================================================
+       */
+
+      const {
+        data: rooms,
+        error: roomsError,
+      } = await supabase
+        .from("rooms")
+        .select("*")
+        .eq("hotel_id", databaseHotelId);
+
+      if (roomsError) {
+        console.error(
+          "Hotel rooms error:",
+          roomsError
+        );
+      }
+
+      /*
+       * ========================================================
+       * CALCULATE STARTING PRICE
+       * ========================================================
+       */
+
+      if (!roomsError && rooms) {
+        const roomPrices = rooms
+          .map((room: any) => {
+            const possiblePrice =
+              room.price ??
+              room.price_per_night ??
+              room.pricePerNight ??
+              room.base_price ??
+              room.basePrice ??
+              room.nightly_price ??
+              room.nightlyPrice;
+
+            const numberPrice =
+              Number(possiblePrice);
+
+            return Number.isFinite(numberPrice)
+              ? numberPrice
+              : 0;
+          })
+          .filter(
+            (roomPrice: number) =>
+              roomPrice > 0
+          );
+
+        if (roomPrices.length > 0) {
+          const cheapestPrice =
+            Math.min(...roomPrices);
+
+          if (mounted) {
+            setPrice(cheapestPrice);
+          }
+        }
+      }
+
+      /*
+       * ========================================================
+       * LOAD REVIEWS
+       * ========================================================
+       */
+
+      const {
+        data: reviews,
+        error: reviewsError,
+      } = await supabase
         .from("reviews")
         .select("rating")
-        .eq("hotel_id", hotelId);
+        .eq("hotel_id", databaseHotelId);
 
-      if (error) {
+      if (reviewsError) {
         console.error(
-          "Hotel card rating error:",
-          error
+          "Hotel reviews error:",
+          reviewsError
         );
+
         return;
       }
 
-      if (!isMounted) return;
+      if (!mounted) return;
 
-      const reviews = (data ?? []) as ReviewRating[];
-      const count = reviews.length;
+      const reviewList =
+        (reviews ?? []) as ReviewRating[];
 
-      const totalRating = reviews.reduce(
-        (sum, review) =>
-          sum + Number(review.rating || 0),
-        0
-      );
+      if (reviewList.length === 0) {
+        setRating(0);
+        setReviewCount(0);
+        return;
+      }
+
+      const totalRating =
+        reviewList.reduce(
+          (sum, review) =>
+            sum +
+            Number(review.rating || 0),
+          0
+        );
 
       const averageRating =
-        count > 0
-          ? Number((totalRating / count).toFixed(1))
-          : 0;
+        totalRating / reviewList.length;
 
-      setRating(averageRating);
-      setReviewCount(count);
+      setRating(
+        Number(
+          averageRating.toFixed(1)
+        )
+      );
+
+      setReviewCount(
+        reviewList.length
+      );
     };
 
-    loadRating();
+    loadHotelData();
+
+    /*
+     * ========================================================
+     * REAL-TIME REVIEW UPDATES
+     * ========================================================
+     */
 
     const channel = supabase
-      .channel(`hotel-card-rating-${hotelId}`)
+      .channel(
+        `hotel-card-${databaseHotelId}`
+      )
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "reviews",
-          filter: `hotel_id=eq.${hotelId}`,
+          filter: `hotel_id=eq.${databaseHotelId}`,
         },
-        loadRating
+        () => {
+          loadHotelData();
+        }
       )
       .subscribe();
 
     return () => {
-      isMounted = false;
-      supabase.removeChannel(channel);
+      mounted = false;
+
+      supabase.removeChannel(
+        channel
+      );
     };
-  }, [hotelId]);
+  }, [hotel.dbId, hotel.slug]);
 
   /*
-   * Load the current user's favorite status.
+   * ============================================================
+   * LOAD FAVORITE
+   * ============================================================
    */
 
   useEffect(() => {
-    if (!hotelId) return;
+    if (!hotel.dbId) return;
 
-    let isMounted = true;
+    let mounted = true;
 
     const loadFavorite = async () => {
       const {
-        data: { user },
+        data: {
+          user,
+        },
       } = await supabase.auth.getUser();
 
       if (!user) return;
 
-      const { data, error } = await supabase
+      const {
+        data,
+        error,
+      } = await supabase
         .from("favorites")
         .select("id")
-        .eq("user_id", user.id)
-        .eq("hotel_id", hotelId)
+        .eq(
+          "user_id",
+          user.id
+        )
+        .eq(
+          "hotel_id",
+          hotel.dbId
+        )
         .maybeSingle();
 
       if (error) {
@@ -142,23 +279,28 @@ export default function HotelCard({ hotel }: HotelCardProps) {
           "Favorite loading error:",
           error
         );
+
         return;
       }
 
-      if (isMounted) {
-        setIsFavorite(Boolean(data));
+      if (mounted) {
+        setIsFavorite(
+          Boolean(data)
+        );
       }
     };
 
     loadFavorite();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [hotelId]);
+  }, [hotel.dbId]);
 
   /*
-   * Add or remove the hotel from favorites.
+   * ============================================================
+   * FAVORITE BUTTON
+   * ============================================================
    */
 
   const handleFavorite = async (
@@ -167,46 +309,71 @@ export default function HotelCard({ hotel }: HotelCardProps) {
     event.preventDefault();
     event.stopPropagation();
 
-    if (favoriteLoading || !hotelId) return;
+    if (
+      favoriteLoading ||
+      !hotel.dbId
+    ) {
+      return;
+    }
 
     setFavoriteLoading(true);
 
     try {
       const {
-        data: { user },
+        data: {
+          user,
+        },
       } = await supabase.auth.getUser();
 
       if (!user) {
         alert(
           "Please login to save your favorite hotels."
         );
+
         return;
       }
 
       if (isFavorite) {
-        const { error } = await supabase
+        const {
+          error,
+        } = await supabase
           .from("favorites")
           .delete()
-          .eq("user_id", user.id)
-          .eq("hotel_id", hotelId);
+          .eq(
+            "user_id",
+            user.id
+          )
+          .eq(
+            "hotel_id",
+            hotel.dbId
+          );
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         setIsFavorite(false);
       } else {
-        const { error } = await supabase
+        const {
+          error,
+        } = await supabase
           .from("favorites")
           .insert({
             user_id: user.id,
-            hotel_id: hotelId,
+            hotel_id: hotel.dbId,
           });
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         setIsFavorite(true);
       }
     } catch (error) {
-      console.error("Favorite error:", error);
+      console.error(
+        "Favorite error:",
+        error
+      );
 
       alert(
         "Unable to update favorite. Please try again."
@@ -217,34 +384,56 @@ export default function HotelCard({ hotel }: HotelCardProps) {
   };
 
   /*
-   * Preserve search parameters in hotel links.
+   * ============================================================
+   * URL
+   * ============================================================
    */
 
-  const hotelParams = new URLSearchParams();
+  const hotelParams =
+    new URLSearchParams();
 
   if (checkIn) {
-    hotelParams.set("checkIn", checkIn);
+    hotelParams.set(
+      "checkIn",
+      checkIn
+    );
   }
 
   if (checkOut) {
-    hotelParams.set("checkOut", checkOut);
+    hotelParams.set(
+      "checkOut",
+      checkOut
+    );
   }
 
   if (guests) {
-    hotelParams.set("guests", guests);
+    hotelParams.set(
+      "guests",
+      guests
+    );
   }
 
-  const hotelUrl = `/hotel/${hotel.slug}${
-    hotelParams.toString()
-      ? `?${hotelParams.toString()}`
-      : ""
-  }`;
+  const hotelUrl =
+    `/hotel/${hotel.slug}` +
+    (
+      hotelParams.toString()
+        ? `?${hotelParams.toString()}`
+        : ""
+    );
+
+  /*
+   * ============================================================
+   * UI
+   * ============================================================
+   */
 
   return (
     <article className="group overflow-hidden rounded-3xl bg-white shadow-sm transition duration-500 hover:-translate-y-1 hover:shadow-xl">
-      {/* Hotel Image */}
+
+      {/* IMAGE */}
 
       <div className="relative aspect-[4/3] overflow-hidden">
+
         <Link
           href={hotelUrl}
           aria-label={`View ${hotel.name}`}
@@ -257,7 +446,7 @@ export default function HotelCard({ hotel }: HotelCardProps) {
           />
         </Link>
 
-        {/* Favorite Button */}
+        {/* FAVORITE */}
 
         <button
           type="button"
@@ -266,9 +455,15 @@ export default function HotelCard({ hotel }: HotelCardProps) {
               ? `Remove ${hotel.name} from favorites`
               : `Save ${hotel.name}`
           }
-          aria-pressed={isFavorite}
-          disabled={favoriteLoading}
-          onClick={handleFavorite}
+          aria-pressed={
+            isFavorite
+          }
+          disabled={
+            favoriteLoading
+          }
+          onClick={
+            handleFavorite
+          }
           className="absolute right-4 top-4 rounded-full bg-white/90 p-2.5 text-neutral-800 shadow-sm backdrop-blur transition hover:bg-white disabled:cursor-wait disabled:opacity-60"
         >
           <Heart
@@ -281,19 +476,26 @@ export default function HotelCard({ hotel }: HotelCardProps) {
           />
         </button>
 
-        {/* Hotel Type */}
+        {/* TYPE */}
 
         <div className="absolute bottom-4 left-4 rounded-full bg-black/65 px-3 py-1.5 text-xs font-medium text-white backdrop-blur">
           {hotel.type}
         </div>
+
       </div>
 
-      {/* Hotel Details */}
+      {/* DETAILS */}
 
       <div className="p-5">
+
         <div className="flex items-start justify-between gap-4">
+
           <div className="min-w-0">
-            <Link href={hotelUrl} className="block">
+
+            <Link
+              href={hotelUrl}
+              className="block"
+            >
               <h3 className="text-lg font-semibold text-neutral-900 transition hover:text-neutral-600">
                 {hotel.name}
               </h3>
@@ -301,26 +503,35 @@ export default function HotelCard({ hotel }: HotelCardProps) {
 
             <div className="mt-1 flex items-center gap-1 text-sm text-neutral-500">
               <MapPin size={14} />
-              <span>{hotel.location}</span>
+
+              <span>
+                {hotel.location}
+              </span>
             </div>
+
           </div>
 
-          {/* Rating */}
+          {/* RATING */}
 
           <div
             className="flex shrink-0 items-center gap-1 text-sm font-semibold text-neutral-900"
             title={`${reviewCount} reviews`}
           >
+
             <Star
               size={14}
               className="fill-current"
             />
 
-            <span>{rating.toFixed(1)}</span>
+            <span>
+              {rating.toFixed(1)}
+            </span>
+
           </div>
+
         </div>
 
-        {/* Review Count */}
+        {/* REVIEWS */}
 
         <p className="mt-1 text-xs text-neutral-400">
           {reviewCount}{" "}
@@ -329,32 +540,59 @@ export default function HotelCard({ hotel }: HotelCardProps) {
             : "verified reviews"}
         </p>
 
-        {/* Amenities */}
+        {/* AMENITIES */}
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {hotel.amenities
+
+          {(Array.isArray(
+            hotel.amenities
+          )
+            ? hotel.amenities
+            : []
+          )
             .slice(0, 3)
-            .map((amenity) => (
-              <span
-                key={amenity}
-                className="rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-600"
-              >
-                {amenity}
-              </span>
-            ))}
+            .map(
+              (
+                amenity
+              ) => (
+                <span
+                  key={
+                    amenity
+                  }
+                  className="rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-600"
+                >
+                  {amenity}
+                </span>
+              )
+            )}
+
         </div>
 
-        {/* Price and Action */}
+        {/* PRICE */}
 
         <div className="mt-5 flex items-end justify-between border-t border-neutral-100 pt-4">
-          <div>
-            <span className="text-xl font-semibold text-neutral-900">
-              ₹{hotel.price.toLocaleString("en-IN")}
-            </span>
 
-            <span className="ml-1 text-sm text-neutral-500">
-              / night
-            </span>
+          <div>
+
+            {price > 0 ? (
+              <>
+                <span className="text-xl font-semibold text-neutral-900">
+                  ₹
+                  {price.toLocaleString(
+                    "en-IN"
+                  )}
+                </span>
+
+                <span className="ml-1 text-sm text-neutral-500">
+                  / night
+                </span>
+              </>
+            ) : (
+              <span className="text-sm text-neutral-500">
+                Rooms unavailable
+              </span>
+            )}
+
           </div>
 
           <Link
@@ -363,8 +601,11 @@ export default function HotelCard({ hotel }: HotelCardProps) {
           >
             View Stay
           </Link>
+
         </div>
+
       </div>
+
     </article>
   );
 }
