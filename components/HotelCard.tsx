@@ -374,7 +374,7 @@ export default function HotelCard({ hotel }: HotelCardProps) {
           .from("favorites")
           .insert({
             user_id: user.id,
-            hotel_id: hotel.dbId,
+            hotel_id: databaseHotelId,
           });
 
         if (error) {
