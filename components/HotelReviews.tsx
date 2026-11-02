@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Star } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
-import { HOTEL_DB_IDS } from "@/data/supabaseIds";
 
 type Customer = {
   first_name: string;
@@ -22,7 +21,7 @@ type Review = {
 };
 
 type HotelReviewsProps = {
-  hotelSlug: string;
+  hotelId: string;
 };
 
 type EligibleBooking = {
@@ -34,7 +33,7 @@ type EligibleBooking = {
 };
 
 export default function HotelReviews({
-  hotelSlug,
+  hotelId,
 }: HotelReviewsProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [averageRating, setAverageRating] = useState(0);
@@ -58,7 +57,6 @@ export default function HotelReviews({
   const [bookingError, setBookingError] =
     useState("");
 
-  const hotelId = HOTEL_DB_IDS[hotelSlug];
 
   /*
    * LOAD REVIEWS
