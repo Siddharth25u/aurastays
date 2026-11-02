@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/lib/supabase";
 
-type SavedHotel = { id: string; slug: string; name: string; location: string | null; type: string | null; image: string | null; price: number | string | null };
+type SavedHotel = { id: string; slug: string; name: string; location: string | null; type: string | null; image: string | null };
 type Favorite = { id: string; hotel_id: string; hotels: SavedHotel | SavedHotel[] | null };
 
 export default function FavoritesPage() {
@@ -38,7 +38,7 @@ export default function FavoritesPage() {
         } else {
           const { data: hotels, error: hotelsError } = await supabase
             .from("hotels")
-            .select("id, slug, name, location, type, image, price")
+            .select("id, slug, name, location, type, image")
             .in("id", hotelIds);
 
           if (hotelsError) {
@@ -92,7 +92,6 @@ export default function FavoritesPage() {
             {favorites.map(favorite => {
               const hotel = Array.isArray(favorite.hotels) ? favorite.hotels[0] : favorite.hotels;
               if (!hotel) return null;
-              const price = Number(hotel.price) || 0;
               const isRemoving = removingId === favorite.id;
               return (
                 <article key={favorite.id} className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
@@ -106,7 +105,7 @@ export default function FavoritesPage() {
                     <h2 className="text-xl font-medium">{hotel.name}</h2>
                     <div className="mt-2 flex items-center gap-2 text-sm text-white/55"><MapPin size={14} />{hotel.location || "Location unavailable"}</div>
                     <div className="mt-5 flex items-end justify-between">
-                      <div><p className="text-xs text-white/40">Starting from</p><p className="mt-1 text-lg font-semibold text-[#e7c78b]">{price > 0 ? `₹${price.toLocaleString("en-IN")}` : "Price unavailable"}<span className="text-xs font-normal text-white/45">{price > 0 ? " / night" : ""}</span></p></div>
+                      <div><p className="text-xs text-white/40">Starting from</p><p className="mt-1 text-lg font-semibold text-[#e7c78b]">Hotel details</p></div>
                       <Link href={`/hotel/${hotel.slug}`} className="flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs text-white transition hover:border-[#e7c78b] hover:text-[#e7c78b]">View <ArrowRight size={14} /></Link>
                     </div>
                   </div>
