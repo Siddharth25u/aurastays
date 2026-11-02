@@ -937,7 +937,7 @@ export default function HotelDetailsPage() {
             {/* Reviews */}
 
             <HotelReviews
-              hotelSlug={hotel.slug}
+              hotelId={hotel.id}
             />
 
           </div>
