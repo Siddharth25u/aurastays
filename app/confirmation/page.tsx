@@ -65,9 +65,9 @@ function ConfirmationContent() {
     </main>
   );
 
-  const hotelName = (Array.isArray(booking.hotel) ? booking.hotels[0]?.name : booking.hotels?.name) || "Your hotel";
-  const hotelLocation = (Array.isArray(booking.hotels) ? booking.hotels[0]?.location : booking.hotels?.location) || "";
-  const roomName = (Array.isArray(booking.rooms) ? booking.room[0]?.name : booking.room?.name) || "Selected room";
+  const hotelName = (Array.isArray(booking.hotel) ? booking.hotel[0]?.name : booking.hotel?.name) || "Your hotel";
+  const hotelLocation = (Array.isArray(booking.hotel) ? booking.hotel[0]?.location : booking.hotel?.location) || "";
+  const roomName = (Array.isArray(booking.room) ? booking.room[0]?.name : booking.room?.name) || "Selected room";
   const checkIn = booking.check_in;
   const checkOut = booking.check_out;
   const guests = Number(booking.guests);
@@ -77,7 +77,7 @@ function ConfirmationContent() {
   const tax = Number(booking.tax);
   const finalTotal = Number(booking.total);
   const bookingNumber = booking.booking_number;
-  const paymentStatus = Array.isArray(booking.payment) ? booking.payments[0]?.status : booking.payments?.status;
+  const paymentStatus = Array.isArray(booking.payment) ? booking.payment[0]?.status : booking.payment?.status;
   const isPaid = paymentStatus === "paid";
   const isConfirmed = booking.status === "confirmed" && isPaid;
 
