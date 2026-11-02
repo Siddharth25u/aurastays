@@ -231,16 +231,12 @@ export default function LoginPage() {
                     Password
                   </label>
 
-                  <button
-                    type="button"
+                  <Link
+                    href="/forgot-password"
                     className="text-[11px] font-medium text-[#ad8545] transition hover:text-[#80602d]"
-                    onClick={() => {
-                      setError("Password reset will be added soon.");
-                      setSuccess("");
-                    }}
                   >
                     Forgot password?
-                  </button>
+                  </Link>
                 </div>
 
                 <div className="group relative">
