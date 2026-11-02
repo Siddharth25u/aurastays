@@ -4,12 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  ArrowRight,
-  Check,
-  CreditCard,
-  Copy,
   Lock,
-  Smartphone,
   ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -161,9 +156,6 @@ export default function PaymentPage() {
       active = false;
     };
   }, [queryReady, hotelSlug, roomId]);
-
-  const [paymentMethod, setPaymentMethod] =
-    useState<"upi" | "card">("upi");
 
 
   const [isProcessing, setIsProcessing] =
@@ -393,14 +385,11 @@ export default function PaymentPage() {
                 {isProcessing ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Processing payment...
+                    Creating booking...
                   </>
                 ) : (
                   <>
-                    Pay ₹
-                    {total.toLocaleString(
-                      "en-IN",
-                    )}
+                    Create pending booking
                     <ArrowRight size={17} />
                   </>
                 )}
