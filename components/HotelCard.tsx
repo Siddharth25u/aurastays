@@ -35,6 +35,7 @@ export default function HotelCard({ hotel }: HotelCardProps) {
     )
   );
 
+  const [databaseHotelId, setDatabaseHotelId] = useState<string | null>(hotel.dbId ?? null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
 
@@ -238,6 +239,19 @@ export default function HotelCard({ hotel }: HotelCardProps) {
     };
   }, [hotel.dbId, hotel.slug]);
 
+  /* Resolve the real Supabase UUID for both dynamic and static cards. */
+  useEffect(() => {
+    let mounted = true;
+    const resolveHotelId = async () => {
+      if (hotel.dbId) { setDatabaseHotelId(hotel.dbId); return; }
+      const { data, error } = await supabase.from("hotels").select("id").eq("slug", hotel.slug).maybeSingle();
+      if (error) { console.error("Hotel ID lookup error:", error); return; }
+      if (mounted && data?.id) setDatabaseHotelId(data.id);
+    };
+    resolveHotelId();
+    return () => { mounted = false; };
+  }, [hotel.dbId, hotel.slug]);
+
   /*
    * ============================================================
    * LOAD FAVORITE
@@ -245,7 +259,7 @@ export default function HotelCard({ hotel }: HotelCardProps) {
    */
 
   useEffect(() => {
-    if (!hotel.dbId) return;
+    if (!databaseHotelId) return;
 
     let mounted = true;
 
@@ -270,7 +284,7 @@ export default function HotelCard({ hotel }: HotelCardProps) {
         )
         .eq(
           "hotel_id",
-          hotel.dbId
+          databaseHotelId
         )
         .maybeSingle();
 
@@ -295,7 +309,7 @@ export default function HotelCard({ hotel }: HotelCardProps) {
     return () => {
       mounted = false;
     };
-  }, [hotel.dbId]);
+  }, [databaseHotelId]);
 
   /*
    * ============================================================
@@ -311,7 +325,7 @@ export default function HotelCard({ hotel }: HotelCardProps) {
 
     if (
       favoriteLoading ||
-      !hotel.dbId
+      !databaseHotelId
     ) {
       return;
     }
@@ -345,7 +359,7 @@ export default function HotelCard({ hotel }: HotelCardProps) {
           )
           .eq(
             "hotel_id",
-            hotel.dbId
+            databaseHotelId
           );
 
         if (error) {
