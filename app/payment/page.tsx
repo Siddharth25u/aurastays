@@ -313,40 +313,6 @@ export default function PaymentPage() {
                 </p>
               </div>
 
-              {/* PAYMENT METHODS */}
-              <div className="mt-8 grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaymentMethod("upi");
-                    setUpiPaid(false);
-                  }}
-                  className={`flex items-center justify-center gap-2 rounded-2xl border p-4 text-sm font-semibold transition ${
-                    paymentMethod === "upi"
-                      ? "border-neutral-900 bg-neutral-900 text-white"
-                      : "border-neutral-200 hover:bg-neutral-50"
-                  }`}
-                >
-                  <Smartphone size={18} />
-                  UPI
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPaymentMethod("card")
-                  }
-                  className={`flex items-center justify-center gap-2 rounded-2xl border p-4 text-sm font-semibold transition ${
-                    paymentMethod === "card"
-                      ? "border-neutral-900 bg-neutral-900 text-white"
-                      : "border-neutral-200 hover:bg-neutral-50"
-                  }`}
-                >
-                  <CreditCard size={18} />
-                  Card
-                </button>
-              </div>
-
               <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
                 <h2 className="font-semibold text-amber-950">Online payments are not connected yet</h2>
                 <p className="mt-2 text-sm leading-6 text-amber-900">
