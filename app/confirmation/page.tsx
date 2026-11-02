@@ -41,7 +41,7 @@ function ConfirmationContent() {
       }
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, booking_number, check_in, check_out, guests, rooms, nights, room_price, subtotal, tax, total, status, hotels(name, location), rooms(name), payments(status)")
+        .select("id, booking_number, check_in, check_out, guests, rooms, nights, room_price, subtotal, tax, total, status, hotel:hotels(name, location), room:rooms(name), payment:payments(status)")
         .eq("id", bookingId)
         .maybeSingle();
       if (!active) return;
@@ -65,9 +65,9 @@ function ConfirmationContent() {
     </main>
   );
 
-  const hotelName = (Array.isArray(booking.hotels) ? booking.hotels[0]?.name : booking.hotels?.name) || "Your hotel";
+  const hotelName = (Array.isArray(booking.hotel) ? booking.hotels[0]?.name : booking.hotels?.name) || "Your hotel";
   const hotelLocation = (Array.isArray(booking.hotels) ? booking.hotels[0]?.location : booking.hotels?.location) || "";
-  const roomName = (Array.isArray(booking.rooms) ? booking.rooms[0]?.name : booking.rooms?.name) || "Selected room";
+  const roomName = (Array.isArray(booking.rooms) ? booking.room[0]?.name : booking.room?.name) || "Selected room";
   const checkIn = booking.check_in;
   const checkOut = booking.check_out;
   const guests = Number(booking.guests);
@@ -77,7 +77,7 @@ function ConfirmationContent() {
   const tax = Number(booking.tax);
   const finalTotal = Number(booking.total);
   const bookingNumber = booking.booking_number;
-  const paymentStatus = Array.isArray(booking.payments) ? booking.payments[0]?.status : booking.payments?.status;
+  const paymentStatus = Array.isArray(booking.payment) ? booking.payments[0]?.status : booking.payments?.status;
   const isPaid = paymentStatus === "paid";
   const isConfirmed = booking.status === "confirmed" && isPaid;
 
