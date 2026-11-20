@@ -20,7 +20,7 @@ const destinations = [
     name: "Dehradun",
     subtitle: "Mountain escapes",
     image:
-      "https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1200&q=85",
+      "https://s7ap1.scene7.com/is/image/incredibleindia/forest-research-institute-dehradun-uttarakhand-5-attr-about?qlt=82&ts=1743056787054",
   },
   {
     name: "Goa",
