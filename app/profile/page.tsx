@@ -14,6 +14,8 @@ import {
   Star,
   Loader2,
   Sparkles,
+  Award,
+  Bell,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -223,39 +225,28 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* FUTURE FEATURES */}
+          {/* ACCOUNT SHORTCUTS */}
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <CalendarDays className="text-[#e7c78b]" size={22} />
-
-              <h3 className="mt-4 text-sm font-semibold">
-                My Bookings
-              </h3>
-
-              <p className="mt-2 text-xs leading-5 text-white/45">
-                Your hotel bookings will appear here.
-              </p>
-
-              <span className="mt-4 inline-block text-[10px] uppercase tracking-wider text-[#e7c78b]">
-                Coming soon
-              </span>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <Star className="text-[#e7c78b]" size={22} />
-
-              <h3 className="mt-4 text-sm font-semibold">
-                My Reviews
-              </h3>
-
-              <p className="mt-2 text-xs leading-5 text-white/45">
-                Your reviews and ratings will appear here.
-              </p>
-
-              <span className="mt-4 inline-block text-[10px] uppercase tracking-wider text-[#e7c78b]">
-                Coming soon
-              </span>
-            </div>
+            <Link href="/bookings" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#e7c78b]/40">
+              <CalendarDays className="text-[#e7c78b]" size={22}/>
+              <h3 className="mt-4 text-sm font-semibold">My Bookings</h3>
+              <p className="mt-2 text-xs leading-5 text-white/45">View and manage your hotel reservations.</p>
+            </Link>
+            <Link href="/rewards" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#e7c78b]/40">
+              <Award className="text-[#e7c78b]" size={22}/>
+              <h3 className="mt-4 text-sm font-semibold">Aura Rewards</h3>
+              <p className="mt-2 text-xs leading-5 text-white/45">Track points earned from completed paid stays.</p>
+            </Link>
+            <Link href="/hotel-alerts" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#e7c78b]/40">
+              <Bell className="text-[#e7c78b]" size={22}/>
+              <h3 className="mt-4 text-sm font-semibold">Hotel Alerts</h3>
+              <p className="mt-2 text-xs leading-5 text-white/45">See price drops and newly available rooms at liked hotels.</p>
+            </Link>
+            <Link href="/favorites" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#e7c78b]/40">
+              <Star className="text-[#e7c78b]" size={22}/>
+              <h3 className="mt-4 text-sm font-semibold">Liked Hotels</h3>
+              <p className="mt-2 text-xs leading-5 text-white/45">Manage the properties you are watching for updates.</p>
+            </Link>
           </div>
         </div>
       </section>
