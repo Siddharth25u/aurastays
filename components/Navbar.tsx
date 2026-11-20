@@ -12,12 +12,16 @@ import {
   Sparkles,
   CalendarCheck,
   Heart,
+  Building2,
+  LayoutDashboard,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -28,6 +32,7 @@ export default function Navbar() {
       } = await supabase.auth.getUser();
 
       setUserEmail(user?.email ?? null);
+      setUserId(user?.id ?? null);
     };
 
     getUser();
@@ -37,6 +42,7 @@ export default function Navbar() {
     } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUserEmail(session?.user?.email ?? null);
+        setUserId(session?.user?.id ?? null);
       },
     );
 
@@ -44,6 +50,26 @@ export default function Navbar() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function loadRole() {
+      if (!userId) {
+        setUserRole(null);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (active) setUserRole(error ? null : data?.role ?? null);
+    }
+    loadRole();
+    return () => { active = false; };
+  }, [userId]);
+
+  const isPropertyOwner = userRole === "owner" || userRole === "admin";
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -125,6 +151,11 @@ export default function Navbar() {
 
         {/* DESKTOP AUTH */}
         <div className="relative hidden items-center gap-3 md:flex">
+          {!isPropertyOwner && (
+            <Link href="/owner/signup" className="hidden rounded-full border border-white/35 px-4 py-2.5 text-xs font-medium text-white/90 transition hover:bg-white hover:text-black lg:inline-flex">
+              <Building2 size={14} className="mr-2"/> List your property
+            </Link>
+          )}
           {userEmail ? (
             <>
               <button
@@ -161,6 +192,12 @@ export default function Navbar() {
                       {userEmail}
                     </p>
                   </div>
+
+                  {isPropertyOwner && (
+                    <Link href="/owner" onClick={closeProfileMenu} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[#e7c78b] transition hover:bg-white/10">
+                      <LayoutDashboard size={16}/> Owner Dashboard
+                    </Link>
+                  )}
 
                   {/* MY PROFILE */}
                   <Link
@@ -288,6 +325,12 @@ export default function Navbar() {
             Liked Hotels
           </Link>
 
+          {!isPropertyOwner && (
+            <Link href="/owner/signup" onClick={closeMobileMenu} className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[#e7c78b] transition hover:bg-white/10">
+              <Building2 size={16}/> List your property
+            </Link>
+          )}
+
           <div className="my-2 h-px bg-white/10" />
 
           {/* MOBILE AUTH */}
@@ -309,6 +352,12 @@ export default function Navbar() {
                   </p>
                 </div>
               </div>
+
+              {isPropertyOwner && (
+                <Link href="/owner" onClick={closeMobileMenu} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#e7c78b] transition hover:bg-white/10">
+                  <LayoutDashboard size={17}/> Owner Dashboard
+                </Link>
+              )}
 
               {/* MOBILE PROFILE */}
               <Link
