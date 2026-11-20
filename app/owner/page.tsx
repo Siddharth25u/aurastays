@@ -633,27 +633,19 @@ export default function OwnerPage() {
   const loadOwnerReviews = useCallback(async () => {
     setReviewsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("reviews")
-        .select("id, rating, comment, created_at, owner_reply, customers(first_name,last_name), hotels(name)")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("get_owner_reviews");
       if (error) throw error;
 
-      setReviews((data ?? []).map((rawRow) => {
-        const row = rawRow as Record<string, unknown>;
-        const customer = relationRecord(row.customers);
-        const hotel = relationRecord(row.hotels);
-        return {
-          id: String(row.id),
-          guest: [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "Guest",
-          property: String(hotel?.name ?? "Property"),
-          rating: Number(row.rating ?? 0),
-          text: String(row.comment ?? ""),
-          date: row.created_at ? new Date(String(row.created_at)).toLocaleDateString("en-IN") : "",
-          replied: Boolean(row.owner_reply),
-          reply: row.owner_reply ? String(row.owner_reply) : undefined,
-        };
-      }));
+      setReviews((data ?? []).map((rawRow: Record<string, unknown>) => ({
+        id: String(rawRow.id),
+        guest: String(rawRow.guest_name ?? "Verified guest"),
+        property: String(rawRow.hotel_name ?? "Property"),
+        rating: Number(rawRow.rating ?? 0),
+        text: String(rawRow.comment ?? ""),
+        date: rawRow.created_at ? new Date(String(rawRow.created_at)).toLocaleDateString("en-IN") : "",
+        replied: Boolean(rawRow.owner_reply),
+        reply: rawRow.owner_reply ? String(rawRow.owner_reply) : undefined,
+      })));
     } catch (error) {
       console.error("Owner reviews load error:", describeError(error));
       setNotice({ type: "error", text: errMsg(error, "Reviews could not be loaded.") });
@@ -667,6 +659,21 @@ export default function OwnerPage() {
     if (!authUserId) return;
     loadOwnerBookings();
     loadOwnerReviews();
+
+    const channel = supabase
+      .channel(`owner-reviews-${authUserId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "reviews",
+      }, () => {
+        loadOwnerReviews();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [authUserId, loadOwnerBookings, loadOwnerReviews]);
 
   async function refreshProperties() {
