@@ -91,6 +91,7 @@ type Room = {
 
 type Booking = {
   id: string;
+  bookingNumber: string;
   guest: string;
   email: string;
   property: string;
@@ -99,10 +100,11 @@ type Booking = {
   checkOut: string;
   amount: number;
   status: BookingStatus;
+  paymentStatus: string;
 };
 
 type Review = {
-  id: number;
+  id: string;
   guest: string;
   property: string;
   rating: number;
@@ -172,19 +174,6 @@ const searchPlaceholders: Partial<Record<Page, string>> = {
    LOCAL DATA
    Hotels are NOT here. Hotels come directly from Supabase.
 ========================================================= */
-
-const initialBookings: Booking[] = [
-  { id: "SL-1001", guest: "Rahul Sharma", email: "rahul@example.com", property: "The Grand Himalayan", room: "Deluxe Room 101", checkIn: "06 Oct 2026", checkOut: "08 Oct 2026", amount: 10080, status: "Confirmed" },
-  { id: "SL-1002", guest: "Priya Mehta", email: "priya@example.com", property: "The Palm Retreat", room: "Pool View 12", checkIn: "07 Oct 2026", checkOut: "10 Oct 2026", amount: 16800, status: "Confirmed" },
-  { id: "SL-1003", guest: "Arjun Singh", email: "arjun@example.com", property: "Royal Heritage Palace", room: "Royal Suite 04", checkIn: "09 Oct 2026", checkOut: "11 Oct 2026", amount: 12320, status: "Pending" },
-  { id: "SL-1004", guest: "Neha Kapoor", email: "neha@example.com", property: "Mountain Mist Resort", room: "Mountain View 07", checkIn: "11 Oct 2026", checkOut: "13 Oct 2026", amount: 9600, status: "Completed" },
-];
-
-const initialReviews: Review[] = [
-  { id: 1, guest: "Aarav Gupta", property: "The Grand Himalayan", rating: 5, text: "Beautiful property and excellent service. The room was extremely clean.", date: "28 Sep 2026", replied: false },
-  { id: 2, guest: "Meera Joshi", property: "The Palm Retreat", rating: 4, text: "Great location and lovely staff. Breakfast could be improved.", date: "26 Sep 2026", replied: true, reply: "Thank you Meera! We are working on improving breakfast." },
-  { id: 3, guest: "Kabir Malhotra", property: "Royal Heritage Palace", rating: 5, text: "Amazing experience. The property looks even better in person.", date: "24 Sep 2026", replied: false },
-];
 
 const initialStaff: StaffMember[] = [
   { id: 1, name: "Aman Rawat", role: "Property Manager", email: "aman@staylux.com", status: "Active" },
@@ -441,8 +430,11 @@ export default function OwnerPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [roomsError, setRoomsError] = useState("");
-  const [bookings, setBookings] = useState<Booking[]>(initialBookings);
-  const [reviews, setReviews] = useState<Review[]>(initialReviews);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [bookingActionId, setBookingActionId] = useState<string | null>(null);
   const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
   const [profile, setProfile] = useState<Profile>(initialProfile);
 
@@ -544,6 +536,86 @@ export default function OwnerPage() {
         setAuthUserId(null);
       });
   }, []);
+
+  const loadOwnerBookings = useCallback(async () => {
+    setBookingsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id, booking_number, check_in, check_out, total, status, customers(first_name,last_name,email), hotels(name), rooms(name), payments(status)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      const mapped = (data ?? []).map((row: any) => {
+        const customer = Array.isArray(row.customers) ? row.customers[0] : row.customers;
+        const hotel = Array.isArray(row.hotels) ? row.hotels[0] : row.hotels;
+        const room = Array.isArray(row.rooms) ? row.rooms[0] : row.rooms;
+        const payment = Array.isArray(row.payments) ? row.payments[0] : row.payments;
+        const rawStatus = String(row.status ?? "pending").toLowerCase();
+        const status = rawStatus === "confirmed" ? "Confirmed"
+          : rawStatus === "completed" ? "Completed"
+          : rawStatus === "cancelled" || rawStatus === "canceled" ? "Cancelled" : "Pending";
+        return {
+          id: String(row.id),
+          bookingNumber: String(row.booking_number ?? row.id),
+          guest: [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "Guest",
+          email: String(customer?.email ?? ""),
+          property: String(hotel?.name ?? "Property"),
+          room: String(room?.name ?? "Room"),
+          checkIn: String(row.check_in ?? ""),
+          checkOut: String(row.check_out ?? ""),
+          amount: Number(row.total ?? 0),
+          status,
+          paymentStatus: String(payment?.status ?? "pending").toLowerCase(),
+        } satisfies Booking;
+      });
+      setBookings(mapped);
+    } catch (error) {
+      console.error("Owner bookings load error:", describeError(error));
+      setNotice({ type: "error", text: errMsg(error, "Bookings could not be loaded.") });
+      setBookings([]);
+    } finally {
+      setBookingsLoading(false);
+    }
+  }, []);
+
+  const loadOwnerReviews = useCallback(async () => {
+    setReviewsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, owner_reply, customers(first_name,last_name), hotels(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      setReviews((data ?? []).map((row: any) => {
+        const customer = Array.isArray(row.customers) ? row.customers[0] : row.customers;
+        const hotel = Array.isArray(row.hotels) ? row.hotels[0] : row.hotels;
+        return {
+          id: String(row.id),
+          guest: [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "Guest",
+          property: String(hotel?.name ?? "Property"),
+          rating: Number(row.rating ?? 0),
+          text: String(row.comment ?? ""),
+          date: row.created_at ? new Date(row.created_at).toLocaleDateString("en-IN") : "",
+          replied: Boolean(row.owner_reply),
+          reply: row.owner_reply ? String(row.owner_reply) : undefined,
+        };
+      }));
+    } catch (error) {
+      console.error("Owner reviews load error:", describeError(error));
+      setNotice({ type: "error", text: errMsg(error, "Reviews could not be loaded.") });
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authUserId) return;
+    loadOwnerBookings();
+    loadOwnerReviews();
+  }, [authUserId, loadOwnerBookings, loadOwnerReviews]);
 
   async function refreshProperties() {
     setRefreshing(true);
@@ -1086,19 +1158,32 @@ export default function OwnerPage() {
      BOOKINGS
   ======================================================= */
 
-  function updateBookingStatus(id: string, status: BookingStatus) {
-    setBookings((current) =>
-      current.map((booking) =>
-        booking.id === id ? { ...booking, status } : booking
-      )
-    );
+  async function updateBookingStatus(id: string, status: BookingStatus) {
+    if (status !== "Confirmed") return;
+    const booking = bookings.find((item) => item.id === id);
+    if (!booking || booking.status !== "Pending" || booking.paymentStatus !== "pending") {
+      setNotice({ type: "error", text: "Only unpaid pending bookings can be verified here." });
+      return;
+    }
+    setBookingActionId(id);
+    try {
+      const { error } = await supabase.rpc("confirm_manual_payment", { p_booking_id: id });
+      if (error) throw error;
+      await loadOwnerBookings();
+      setNotice({ type: "success", text: `Manual payment verified for ${booking.bookingNumber}.` });
+    } catch (error) {
+      console.error("Manual payment confirmation error:", describeError(error));
+      setNotice({ type: "error", text: errMsg(error, "Payment could not be verified.") });
+    } finally {
+      setBookingActionId(null);
+    }
   }
 
   function exportBookings() {
     downloadCsv("bookings.csv", [
-      ["Booking ID", "Guest", "Email", "Property", "Room", "Check-in", "Check-out", "Amount (INR)", "Status"],
+      ["Booking ID", "Guest", "Email", "Property", "Room", "Check-in", "Check-out", "Amount (INR)", "Status", "Payment"],
       ...bookings.map((b) => [
-        b.id, b.guest, b.email, b.property, b.room, b.checkIn, b.checkOut, b.amount, b.status,
+        b.bookingNumber, b.guest, b.email, b.property, b.room, b.checkIn, b.checkOut, b.amount, b.status, b.paymentStatus,
       ]),
     ]);
   }
@@ -1112,18 +1197,25 @@ export default function OwnerPage() {
     setReplyText(review.reply ?? "");
   }
 
-  function sendReply() {
+  async function sendReply() {
     if (!replyTarget || !replyText.trim()) return;
     const id = replyTarget.id;
     const text = replyText.trim();
-
-    setReviews((current) =>
-      current.map((review) =>
-        review.id === id ? { ...review, replied: true, reply: text } : review
-      )
-    );
+    const { error } = await supabase
+      .from("reviews")
+      .update({ owner_reply: text, owner_replied_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      console.error("Review reply error:", describeError(error));
+      setNotice({ type: "error", text: errMsg(error, "Reply could not be saved.") });
+      return;
+    }
+    setReviews((current) => current.map((review) =>
+      review.id === id ? { ...review, replied: true, reply: text } : review
+    ));
     setReplyTarget(null);
     setReplyText("");
+    setNotice({ type: "success", text: "Your reply has been saved." });
   }
 
   /* =======================================================
@@ -1459,6 +1551,8 @@ export default function OwnerPage() {
               filter={bookingFilter}
               setFilter={setBookingFilter}
               onStatusChange={updateBookingStatus}
+              actionId={bookingActionId}
+              loading={bookingsLoading}
               onExport={exportBookings}
             />
           )}
@@ -1472,6 +1566,7 @@ export default function OwnerPage() {
               reviews={filteredReviews}
               allReviews={reviews}
               onReply={openReply}
+              loading={reviewsLoading}
             />
           )}
 
@@ -2479,12 +2574,16 @@ function BookingsPage({
   filter,
   setFilter,
   onStatusChange,
+  actionId,
+  loading,
   onExport,
 }: {
   bookings: Booking[];
   filter: "All" | BookingStatus;
   setFilter: (filter: "All" | BookingStatus) => void;
   onStatusChange: (id: string, status: BookingStatus) => void;
+  actionId: string | null;
+  loading: boolean;
   onExport: () => void;
 }) {
   const filters: ("All" | BookingStatus)[] = ["All", ...bookingStatuses];
@@ -2524,7 +2623,9 @@ function BookingsPage({
           </button>
         </div>
 
-        {bookings.length === 0 ? (
+        {loading ? (
+          <p className="px-6 py-14 text-center text-sm text-[#89939D]">Loading bookings...</p>
+        ) : bookings.length === 0 ? (
           <p className="px-6 py-14 text-center text-sm text-[#89939D]">
             No bookings match your filter.
           </p>
@@ -2550,7 +2651,7 @@ function BookingsPage({
                     className="border-b border-[#EDF0F2] last:border-0"
                   >
                     <td className="px-6 py-4 text-xs font-semibold">
-                      {booking.id}
+                      {booking.bookingNumber}
                     </td>
 
                     <td className="px-6 py-4">
@@ -2582,39 +2683,24 @@ function BookingsPage({
                     </td>
 
                     <td className="px-6 py-4">
-                      <StatusSelect
-                        value={booking.status}
-                        options={bookingStatuses}
-                        onChange={(status) =>
-                          onStatusChange(booking.id, status)
-                        }
-                      />
+                      <div className="space-y-1">
+                        <StatusBadge status={booking.status} />
+                        <p className="text-[10px] text-[#89939D]">Payment: {booking.paymentStatus}</p>
+                      </div>
                     </td>
 
                     <td className="px-6 py-4">
-                      {booking.status === "Pending" ? (
-                        <div className="flex gap-1">
-                          <button
-                            aria-label="Confirm booking"
-                            onClick={() =>
-                              onStatusChange(booking.id, "Confirmed")
-                            }
-                            className="rounded-lg bg-[#EAF4F0] p-2 text-[#176B61]"
-                          >
-                            <Check size={14} />
-                          </button>
-                          <button
-                            aria-label="Cancel booking"
-                            onClick={() =>
-                              onStatusChange(booking.id, "Cancelled")
-                            }
-                            className="rounded-lg bg-red-50 p-2 text-red-500"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
+                      {booking.status === "Pending" && booking.paymentStatus === "pending" ? (
+                        <button
+                          type="button"
+                          disabled={actionId === booking.id}
+                          onClick={() => onStatusChange(booking.id, "Confirmed")}
+                          className="rounded-lg bg-[#EAF4F0] px-3 py-2 text-xs font-semibold text-[#176B61] disabled:opacity-50"
+                        >
+                          {actionId === booking.id ? "Verifying..." : "Verify manual payment"}
+                        </button>
                       ) : (
-                        <span className="text-xs text-[#A0A8B0]">—</span>
+                        <span className="text-xs text-[#A0A8B0]">No action</span>
                       )}
                     </td>
                   </tr>
@@ -2703,10 +2789,12 @@ function ReviewsPage({
   reviews,
   allReviews,
   onReply,
+  loading,
 }: {
   reviews: Review[];
   allReviews: Review[];
   onReply: (review: Review) => void;
+  loading: boolean;
 }) {
   const average = allReviews.length
     ? allReviews.reduce((sum, review) => sum + review.rating, 0) /
@@ -2737,7 +2825,9 @@ function ReviewsPage({
         </div>
 
         <div className="space-y-4">
-          {reviews.length === 0 && (
+          {loading ? (
+            <p className="rounded-2xl border border-dashed border-[#DCE2E6] bg-white px-6 py-12 text-center text-sm text-[#89939D]">Loading reviews...</p>
+          ) : reviews.length === 0 && (
             <p className="rounded-2xl border border-dashed border-[#DCE2E6] bg-white px-6 py-12 text-center text-sm text-[#89939D]">
               No reviews match your search.
             </p>
