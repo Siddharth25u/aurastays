@@ -6,18 +6,14 @@ import { Star } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 
-type Customer = {
-  first_name: string;
-  last_name: string;
-};
-
 type Review = {
   id: string;
   rating: number;
   comment: string;
   photos: string[] | null;
   created_at: string;
-  customers: Customer | Customer[] | null;
+  guest_display_name: string;
+  owner_reply: string | null;
 };
 
 type HotelReviewsProps = {
@@ -71,22 +67,7 @@ export default function HotelReviews({
     setError("");
 
     const { data, error: reviewsError } = await supabase
-      .from("reviews")
-      .select(`
-        id,
-        rating,
-        comment,
-        photos,
-        created_at,
-        customers (
-          first_name,
-          last_name
-        )
-      `)
-      .eq("hotel_id", hotelId)
-      .order("created_at", {
-        ascending: false,
-      });
+      .rpc("get_public_hotel_reviews", { p_hotel_id: hotelId });
 
     if (reviewsError) {
       console.error(
@@ -108,10 +89,8 @@ export default function HotelReviews({
           ? (review.photos as string[])
           : null,
         created_at: review.created_at,
-        customers: review.customers as
-          | Customer
-          | Customer[]
-          | null,
+        guest_display_name: String(review.guest_display_name ?? "Verified guest"),
+        owner_reply: review.owner_reply ? String(review.owner_reply) : null,
       })
     );
 
@@ -235,11 +214,8 @@ export default function HotelReviews({
         )
         .eq("hotel_id", hotelId)
         .eq("customer_id", customer.id)
-        .not(
-          "status",
-          "in",
-          '("cancelled","cancelled_by_user")'
-        )
+        .eq("status", "completed")
+        .lte("check_out", new Date().toISOString().slice(0, 10))
         .order("created_at", {
           ascending: false,
         });
@@ -576,16 +552,6 @@ export default function HotelReviews({
       {reviews.length > 0 && (
         <div className="mt-5 space-y-4">
           {reviews.map((review) => {
-            const customer = Array.isArray(
-              review.customers
-            )
-              ? review.customers[0]
-              : review.customers;
-
-            const customerName = customer
-              ? `${customer.first_name} ${customer.last_name}`
-              : "Guest";
-
             const reviewDate = new Date(
               review.created_at
             ).toLocaleDateString("en-IN", {
@@ -602,7 +568,7 @@ export default function HotelReviews({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h3 className="font-semibold text-gray-900">
-                      {customerName}
+                      {review.guest_display_name}
                     </h3>
 
                     <p className="mt-1 text-xs text-gray-500">
@@ -632,6 +598,13 @@ export default function HotelReviews({
                 <p className="mt-4 text-sm leading-6 text-gray-600">
                   {review.comment}
                 </p>
+
+                {review.owner_reply && (
+                  <div className="mt-4 rounded-xl bg-gray-50 p-4">
+                    <p className="text-xs font-semibold text-emerald-700">Response from the property</p>
+                    <p className="mt-1 text-sm leading-6 text-gray-600">{review.owner_reply}</p>
+                  </div>
+                )}
 
                 {/* REVIEW PHOTOS */}
                 {review.photos &&
