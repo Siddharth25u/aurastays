@@ -453,11 +453,21 @@ export default function HotelCard({ hotel }: HotelCardProps) {
           aria-label={`View ${hotel.name}`}
           className="block h-full w-full"
         >
-          <img
-            src={hotel.image}
-            alt={hotel.name}
-            className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-          />
+          {hotel.image?.trim() ? (
+            <img
+              src={hotel.image.trim()}
+              alt={hotel.name}
+              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <div
+              role="img"
+              aria-label={`Image unavailable for ${hotel.name}`}
+              className="flex h-full w-full items-center justify-center bg-neutral-100 text-sm text-neutral-500"
+            >
+              Image unavailable
+            </div>
+          )}
         </Link>
 
         {/* FAVORITE */}
