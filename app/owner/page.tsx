@@ -218,6 +218,14 @@ const emptyRoomForm = {
    HELPERS
 ========================================================= */
 
+function relationRecord(value: unknown): Record<string, unknown> | null {
+  if (Array.isArray(value)) {
+    const first = value[0];
+    return first && typeof first === "object" ? first as Record<string, unknown> : null;
+  }
+  return value && typeof value === "object" ? value as Record<string, unknown> : null;
+}
+
 function money(amount: number) {
   return `₹${Number(amount || 0).toLocaleString("en-IN")}`;
 }
@@ -588,11 +596,12 @@ export default function OwnerPage() {
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      const mapped = (data ?? []).map((row: any) => {
-        const customer = Array.isArray(row.customers) ? row.customers[0] : row.customers;
-        const hotel = Array.isArray(row.hotels) ? row.hotels[0] : row.hotels;
-        const room = Array.isArray(row.rooms) ? row.rooms[0] : row.rooms;
-        const payment = Array.isArray(row.payments) ? row.payments[0] : row.payments;
+      const mapped = (data ?? []).map((rawRow) => {
+        const row = rawRow as Record<string, unknown>;
+        const customer = relationRecord(row.customers);
+        const hotel = relationRecord(row.hotels);
+        const room = relationRecord(row.rooms);
+        const payment = relationRecord(row.payments);
         const rawStatus = String(row.status ?? "pending").toLowerCase();
         const status = rawStatus === "confirmed" ? "Confirmed"
           : rawStatus === "completed" ? "Completed"
@@ -630,16 +639,17 @@ export default function OwnerPage() {
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      setReviews((data ?? []).map((row: any) => {
-        const customer = Array.isArray(row.customers) ? row.customers[0] : row.customers;
-        const hotel = Array.isArray(row.hotels) ? row.hotels[0] : row.hotels;
+      setReviews((data ?? []).map((rawRow) => {
+        const row = rawRow as Record<string, unknown>;
+        const customer = relationRecord(row.customers);
+        const hotel = relationRecord(row.hotels);
         return {
           id: String(row.id),
           guest: [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "Guest",
           property: String(hotel?.name ?? "Property"),
           rating: Number(row.rating ?? 0),
           text: String(row.comment ?? ""),
-          date: row.created_at ? new Date(row.created_at).toLocaleDateString("en-IN") : "",
+          date: row.created_at ? new Date(String(row.created_at)).toLocaleDateString("en-IN") : "",
           replied: Boolean(row.owner_reply),
           reply: row.owner_reply ? String(row.owner_reply) : undefined,
         };
