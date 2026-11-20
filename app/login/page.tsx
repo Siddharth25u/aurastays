@@ -323,6 +323,17 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {/* PROPERTY OWNER ACCESS */}
+            <div className="mt-6 rounded-2xl border border-[#eee6d8] bg-[#fbf8f1] px-4 py-4 text-center">
+              <p className="text-sm font-semibold text-[#1b1b17]">Are you a hotel owner?</p>
+              <p className="mt-1 text-xs text-gray-500">Sign in to manage your property or create a partner account.</p>
+              <div className="mt-3 flex items-center justify-center gap-4 text-xs font-semibold text-[#a77d3e]">
+                <Link href="/owner/login" className="hover:underline">Owner login</Link>
+                <span className="text-[#d7c9b0]">|</span>
+                <Link href="/owner/signup" className="hover:underline">List your property</Link>
+              </div>
+            </div>
+
             {/* SECURITY NOTE */}
             <div className="mt-10 flex items-center justify-center gap-2 text-center text-[10px] uppercase tracking-[0.13em] text-gray-400">
               <ShieldCheck size={14} className="text-[#b28b4c]" />
