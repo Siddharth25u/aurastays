@@ -214,7 +214,7 @@ export default function HotelReviews({
         )
         .eq("hotel_id", hotelId)
         .eq("customer_id", customer.id)
-        .eq("status", "completed")
+        .in("status", ["confirmed", "completed"])
         .lte("check_out", new Date().toISOString().slice(0, 10))
         .order("created_at", {
           ascending: false,
