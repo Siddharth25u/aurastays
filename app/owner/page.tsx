@@ -480,20 +480,35 @@ export default function OwnerPage() {
   const loadProperties = useCallback(async () => {
     try {
       setPropertiesError("");
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authData.user) {
+        setProperties([]);
+        return;
+      }
 
-      const { data, error } = await supabase
-        .from("hotels")
-        .select(HOTEL_COLUMNS)
-        .order("created_at", { ascending: true });
+      const { data: roleRow, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", authData.user.id)
+        .maybeSingle();
+      if (roleError) throw roleError;
 
+      if (!roleRow || !["owner", "admin"].includes(roleRow.role)) {
+        setProperties([]);
+        setPropertiesError("This account does not have owner or admin access.");
+        return;
+      }
+
+      let query = supabase.from("hotels").select(HOTEL_COLUMNS);
+      if (roleRow.role !== "admin") query = query.eq("owner_id", authData.user.id);
+      const { data, error } = await query.order("created_at", { ascending: true });
       if (error) throw error;
-
-      setProperties(
-        ((data ?? []) as Record<string, unknown>[]).map(toHotel)
-      );
+      setProperties(((data ?? []) as Record<string, unknown>[]).map(toHotel));
     } catch (error) {
       console.warn("Supabase hotels error:", describeError(error));
       setPropertiesError(errMsg(error, "Hotels could not be loaded."));
+      setProperties([]);
     } finally {
       setPropertiesLoading(false);
     }
@@ -502,18 +517,45 @@ export default function OwnerPage() {
   const loadRooms = useCallback(async () => {
     try {
       setRoomsError("");
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authData.user) {
+        setRooms([]);
+        return;
+      }
+
+      const { data: roleRow, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", authData.user.id)
+        .maybeSingle();
+      if (roleError) throw roleError;
+      if (!roleRow || !["owner", "admin"].includes(roleRow.role)) {
+        setRooms([]);
+        return;
+      }
+
+      let hotelQuery = supabase.from("hotels").select("id");
+      if (roleRow.role !== "admin") hotelQuery = hotelQuery.eq("owner_id", authData.user.id);
+      const { data: ownedHotels, error: hotelsError } = await hotelQuery;
+      if (hotelsError) throw hotelsError;
+      const hotelIds = (ownedHotels ?? []).map((hotel) => hotel.id);
+      if (hotelIds.length === 0) {
+        setRooms([]);
+        return;
+      }
 
       const { data, error } = await supabase
         .from("rooms")
         .select("*")
+        .in("hotel_id", hotelIds)
         .order("created_at", { ascending: true });
-
       if (error) throw error;
-
       setRooms(((data ?? []) as Record<string, unknown>[]).map(toRoom));
     } catch (error) {
       console.warn("Supabase rooms error:", describeError(error));
       setRoomsError(errMsg(error, "Rooms could not be loaded."));
+      setRooms([]);
     } finally {
       setRoomsLoading(false);
     }
