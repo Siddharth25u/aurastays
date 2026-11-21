@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Compass, Heart, MapPin, Sparkles, WandSparkles } from "lucide-react";
+import { ArrowLeft, Compass, MapPin, Sparkles, WandSparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/lib/supabase";
 
