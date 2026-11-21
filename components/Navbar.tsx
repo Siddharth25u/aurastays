@@ -134,14 +134,6 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/aura-match"
-            className="flex items-center gap-1.5 text-sm text-[#e7c78b] transition hover:text-white"
-          >
-            <Sparkles size={14} />
-            Aura Match
-          </Link>
-
-          <Link
             href="/#experiences"
             className="text-sm text-white/80 transition hover:text-white"
           >
@@ -314,15 +306,6 @@ export default function Navbar() {
             className="rounded-xl px-4 py-3 text-sm text-white/85 transition hover:bg-white/10"
           >
             Stays
-          </Link>
-
-          <Link
-            href="/aura-match"
-            onClick={closeMobileMenu}
-            className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm text-[#e7c78b] transition hover:bg-white/10"
-          >
-            <Sparkles size={16} />
-            Aura Match
           </Link>
 
           <Link
