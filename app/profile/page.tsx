@@ -237,6 +237,11 @@ export default function ProfilePage() {
               <h3 className="mt-4 text-sm font-semibold">Aura Rewards</h3>
               <p className="mt-2 text-xs leading-5 text-white/45">Track points earned from completed paid stays.</p>
             </Link>
+            <Link href="/aura-match" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#e7c78b]/40">
+              <Sparkles className="text-[#e7c78b]" size={22}/>
+              <h3 className="mt-4 text-sm font-semibold">Aura Match</h3>
+              <p className="mt-2 text-xs leading-5 text-white/45">Discover stays matched to your mood and budget.</p>
+            </Link>
             <Link href="/hotel-alerts" className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#e7c78b]/40">
               <Bell className="text-[#e7c78b]" size={22}/>
               <h3 className="mt-4 text-sm font-semibold">Hotel Alerts</h3>
