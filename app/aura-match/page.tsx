@@ -113,7 +113,7 @@ export default function AuraMatchPage() {
   const matched = useMemo(() => {
     const maxBudget = budget === "any" ? Infinity : Number(budget);
     return hotels
-      .filter((hotel) => !hotel.price || hotel.price <= maxBudget)
+      .filter((hotel) => maxBudget === Infinity || (hotel.price > 0 && hotel.price <= maxBudget))
       .map((hotel) => {
         const searchable = [hotel.name, hotel.location, hotel.type, hotel.description, ...hotel.amenities].join(" ").toLowerCase();
         const score = selectedMood.words.reduce((sum, word) => sum + (searchable.includes(word) ? 1 : 0), 0);
