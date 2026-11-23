@@ -69,8 +69,8 @@ function DemoPaymentContent() {
   return (
     <main className="min-h-screen bg-neutral-50 px-5 py-10 text-neutral-900 sm:px-8">
       <div className="mx-auto max-w-xl">
-        <Link href="/payment" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900">
-          <ArrowLeft size={16} /> Back
+        <Link href="/bookings" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900">
+          <ArrowLeft size={16} /> Back to bookings
         </Link>
         <div className="mt-6 overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
           <div className="bg-neutral-900 px-7 py-8 text-white">
