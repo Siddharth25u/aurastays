@@ -251,8 +251,9 @@ export default function BookingsPage() {
 
       /*
        * STEP 1:
-       * Find the customer linked to the
-       * currently logged-in user's email.
+       * Resolve the customer by the authenticated
+       * Supabase user ID. Email can change or differ
+       * in casing, so it must not be the ownership key.
        */
       const {
         data: customer,
@@ -260,7 +261,7 @@ export default function BookingsPage() {
       } = await supabase
         .from("customers")
         .select("id")
-        .eq("email", user.email)
+        .eq("auth_user_id", user.id)
         .maybeSingle();
 
       if (customerError) {
