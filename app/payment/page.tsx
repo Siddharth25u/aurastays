@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowRight,
+  Check,
   Lock,
   ShieldCheck,
 } from "lucide-react";
