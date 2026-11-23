@@ -259,7 +259,7 @@ export default function PaymentPage() {
       if (error) throw error;
       const created = Array.isArray(data) ? data[0] : data;
       if (!created?.booking_id) throw new Error("Booking could not be created.");
-      router.push(`/confirmation?bookingId=${encodeURIComponent(created.booking_id)}`);
+      router.push(`/demo-payment?bookingId=${encodeURIComponent(created.booking_id)}`);
     } catch (error) {
       console.error("Pending booking creation failed:", error);
       alert(error instanceof Error ? error.message : "Booking could not be created.");
@@ -357,7 +357,7 @@ export default function PaymentPage() {
                   </>
                 ) : (
                   <>
-                    Create pending booking
+                    Continue to demo payment
                     <ArrowRight size={17} />
                   </>
                 )}
