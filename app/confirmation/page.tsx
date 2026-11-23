@@ -41,7 +41,7 @@ function ConfirmationContent() {
       }
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, booking_number, check_in, check_out, guests, rooms, nights, room_price, subtotal, tax, total, status, hotel:hotels(name, location), room:rooms(name), payment:payments(status)")
+        .select("id, booking_number, check_in, check_out, guests, rooms, nights, room_price, subtotal, tax, total, status, hotel:hotels(name, location, image), room:rooms(name, image), payment:payments(status)")
         .eq("id", bookingId)
         .maybeSingle();
       if (!active) return;
@@ -68,6 +68,7 @@ function ConfirmationContent() {
   const hotelName = (Array.isArray(booking.hotel) ? booking.hotel[0]?.name : booking.hotel?.name) || "Your hotel";
   const hotelLocation = (Array.isArray(booking.hotel) ? booking.hotel[0]?.location : booking.hotel?.location) || "";
   const roomName = (Array.isArray(booking.room) ? booking.room[0]?.name : booking.room?.name) || "Selected room";
+  const roomImage = (Array.isArray(booking.room) ? booking.room[0]?.image : booking.room?.image) || (Array.isArray(booking.hotel) ? booking.hotel[0]?.image : booking.hotel?.image) || "/placeholder-hotel.jpg";
   const checkIn = booking.check_in;
   const checkOut = booking.check_out;
   const guests = Number(booking.guests);
